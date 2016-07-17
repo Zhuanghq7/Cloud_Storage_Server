@@ -76,11 +76,15 @@ public class ClientServer extends Thread{
 			Socket basic = Nodes[1];
 			outS("second",basic);
 			waitGetS(basic);
+			outS("up",basic);
+			waitGetS(basic);
 			DataOutputStream dosB = new DataOutputStream(basic.getOutputStream());
 			dosB.writeLong(flength);
 			dosB.flush();
 			if(waitGetS(basic)){
 				outS("second",main);
+				waitGetS(main);
+				outS("up",main);
 				waitGetS(main);
 				DataOutputStream dosA = new DataOutputStream(main.getOutputStream());
 				dosA.writeLong(flength);
@@ -110,10 +114,10 @@ public class ClientServer extends Thread{
 				out(uuid);
 				waitGet();
 				for(Node nn :MainServer.NodeList){
-					if(nn.getIp().equals(main.getInetAddress())){
+					if(nn.getIp().equals(main.getInetAddress())&& nn.getPort()==main.getPort()){
 						nn.downLeftStorage(flength);
 					}
-					if(nn.getIp().equals(basic.getInetAddress())){
+					if(nn.getIp().equals(basic.getInetAddress())&&nn.getPort()==basic.getPort()){
 						nn.downLeftStorage(flength);
 					}
 				}
@@ -122,6 +126,7 @@ public class ClientServer extends Thread{
 				MainServer.prop.setProperty(uuid+"mainPort",""+main.getPort());
 				MainServer.prop.setProperty(uuid+"basicIP",basic.getInetAddress().toString());
 				MainServer.prop.setProperty(uuid+"basicPort",""+basic.getPort());
+				MainServer.prop.setProperty(uuid+"size", ""+flength);
 				MainServer.updateStorage();
 				MainServer.saveProperties();
 				if(main!=null){
@@ -153,6 +158,8 @@ public class ClientServer extends Thread{
 			try {
 				Socket sB = new Socket(MainIP,port);
 				outS("second",sB);
+				waitGetS(sB);
+				outS("down",sB);
 				waitGetS(sB);
 				outS(uuid+fileName,sB);
 				if(waitGetS(sB)){
@@ -203,6 +210,8 @@ public class ClientServer extends Thread{
 					port = Integer.parseInt(MainServer.prop.getProperty(uuid+"basicPort"));
 					Socket sB = new Socket(BasicIP,port);
 					outS("second",sB);
+					waitGetS(sB);
+					outS("down",sB);
 					waitGetS(sB);
 					outS(uuid+fileName,sB);
 					if(waitGetS(sB)){
@@ -279,11 +288,12 @@ public class ClientServer extends Thread{
 	public void delete() throws UnsupportedEncodingException, IOException{
 		out("get");
 		String fileName = in();
+		String uuid = fileName;
 		if(MainServer.prop.contains(fileName)){
 			out("get");
 			String mainIP = MainServer.prop.getProperty(fileName+"mainIP");
 			int port = Integer.parseInt(MainServer.prop.getProperty(fileName+"mainPort"));
-			try{
+			
 				Socket ss = new Socket(mainIP,port);
 				outS("second",ss);
 				waitGetS(ss);
@@ -298,31 +308,52 @@ public class ClientServer extends Thread{
 				if(s!=null){
 					s.close();
 				}
-			}catch(Exception e){
+				for(Node nn :MainServer.NodeList){
+					if(nn.getIp().equals(ss.getInetAddress())&& nn.getPort()==ss.getPort()){
+						nn.downLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
+					}
+				}
 				String basicIP = MainServer.prop.getProperty(fileName+"basicIP");
 				port = Integer.parseInt(MainServer.prop.getProperty(fileName+"basicPort"));
 				try{
-				Socket ss = new Socket(basicIP,port);
-				outS("second",ss);
-				waitGetS(ss);
-				outS("delete",ss);
-				waitGetS(ss);
-				String f = fileName;
+				Socket sss = new Socket(basicIP,port);
+				outS("second",sss);
+				waitGetS(sss);
+				outS("delete",sss);
+				waitGetS(sss);
+				String ff = fileName;
 				if(MainServer.prop.getProperty(fileName).equals(fileName)){
-					f = MainServer.prop.getProperty(fileName+"oldName");
+					ff = MainServer.prop.getProperty(fileName+"oldName");
 				}
-				outS(f,ss);
-				waitGetS(ss);
+				outS(ff,sss);
+				waitGetS(sss);
 				if(s!=null){
 					s.close();
 				}
-				
+				for(Node nn :MainServer.NodeList){
+					if(nn.getIp().equals(sss.getInetAddress())&& nn.getPort()==sss.getPort()){
+						nn.downLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
+					}
+				}
+				MainServer.updateStorage();
+				if(MainServer.prop.getProperty(uuid).equals(uuid)){
+					MainServer.prop.remove(uuid+"nowName");
+					MainServer.prop.remove(uuid+"oldName");
+				}
+									
+					MainServer.prop.remove(uuid);
+					MainServer.prop.remove(uuid+"mainIP");
+					MainServer.prop.remove(uuid+"basicIP");
+					MainServer.prop.remove(uuid+"mainPort");
+					MainServer.prop.remove(uuid+"basicPort");
+					MainServer.prop.remove(uuid+"size");
+					MainServer.saveProperties();
 				}catch(Exception ee){
 					if(s!=null){
 						s.close();
 					}
 				}
-			}
+			
 		}
 		else{
 			out("false");
