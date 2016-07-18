@@ -101,6 +101,7 @@ public class ClientServer extends Thread{
 				outS(newFile,basic);
 				waitGetS(basic);
 				
+				try{
 				out("get");//向客户端确认可以存储 
 				byte[] inputByte = new byte[1024];     
 				System.out.println("开始上传文件："+fileName);  
@@ -140,10 +141,26 @@ public class ClientServer extends Thread{
 				out(uuid);//返回uuid
 				waitGet();
 				if(main!=null){
+					main.getOutputStream().close();
 					main.close();
 				}
 				if(basic!=null){
+					basic.getOutputStream().close();
 					basic.close();
+				}
+				}catch(Exception e){
+					if(main!=null){
+						main.getOutputStream().close();
+						main.close();
+						System.out.println("关闭main");
+					}
+					if(basic!=null){
+						
+						basic.getOutputStream().close();
+						basic.close();
+						System.out.println("关闭baisc");
+					}
+					System.out.println("上传失败");
 				}
 			}else{//如果，备份服务器都放不下
 				out("false");
