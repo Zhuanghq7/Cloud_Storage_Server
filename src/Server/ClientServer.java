@@ -128,7 +128,7 @@ public class ClientServer extends Thread{
 				MainServer.prop.setProperty(uuid+"basicIP",basic.getInetAddress().toString().substring(1));
 				MainServer.prop.setProperty(uuid+"basicPort",""+basic.getPort());
 				MainServer.prop.setProperty(uuid+"size", ""+flength);
-				MainServer.prop.setProperty("fileNumber", ""+Integer.parseInt(MainServer.prop.getProperty("fileNumber"))+1);
+				MainServer.prop.setProperty("fileNumber", ""+(Integer.parseInt(MainServer.prop.getProperty("fileNumber"))+1));
 				MainServer.updateStorage();
 				MainServer.saveProperties();
 				out(uuid);
@@ -153,7 +153,7 @@ public class ClientServer extends Thread{
 		String nowName = null;
 		String fileName;
 		if((fileName = MainServer.prop.getProperty(uuid)) !=null){
-			if(fileName == uuid){
+			if(fileName.equals(uuid)){
 				fileName = MainServer.prop.getProperty(uuid+"oldName");
 				nowName = MainServer.prop.getProperty(uuid+"nowName");
 			}
@@ -279,10 +279,12 @@ public class ClientServer extends Thread{
 	public void rename() throws UnsupportedEncodingException, IOException{
 		out("get");
 		String fileName = in();
-		if(MainServer.prop.contains(fileName)){
-			String oldName = MainServer.prop.getProperty(fileName);
+		String oldName = null;
+		if((oldName = MainServer.prop.getProperty(fileName))!=null){
 			MainServer.prop.setProperty(fileName, fileName);
-			MainServer.prop.setProperty(fileName+"oldName",oldName);
+			if(!oldName.equals(fileName)){
+				MainServer.prop.setProperty(fileName+"oldName",oldName);
+			}
 			out("get");
 			String nowName = in();
 			MainServer.prop.setProperty(fileName+"nowName", nowName);
@@ -300,46 +302,51 @@ public class ClientServer extends Thread{
 		out("get");
 		String fileName = in();
 		String uuid = fileName;
-		if(MainServer.prop.contains(fileName)){
-			out("get");
-			String mainIP = MainServer.prop.getProperty(fileName+"mainIP");
-			int port = Integer.parseInt(MainServer.prop.getProperty(fileName+"mainPort"));
+		String nowName = null;
+		String oldName = null;
+		if((nowName = MainServer.prop.getProperty(uuid))!=null){
 			
-				Socket ss = new Socket(mainIP,port);
-				outS("second",ss);
-				waitGetS(ss);
-				outS("delete",ss);
-				waitGetS(ss);
-				String f = fileName;
-				if(MainServer.prop.getProperty(fileName).equals(fileName)){
-					f = MainServer.prop.getProperty(fileName+"oldName");
+			if(nowName.equals(uuid)){
+				nowName = MainServer.prop.getProperty(uuid+"nowName");
+				oldName = MainServer.prop.getProperty(uuid+"oldName");
+			}
+			String mainIP = MainServer.prop.getProperty(uuid+"mainIP");
+			int port = Integer.parseInt(MainServer.prop.getProperty(uuid+"mainPort"));
+			Socket ss = new Socket(mainIP,port);
+			outS("second",ss);
+			waitGetS(ss);
+			outS("delete",ss);
+			waitGetS(ss);
+			String f = uuid+nowName;
+			if(oldName!=null){
+				f = uuid+oldName;
+			}
+			outS(f,ss);
+			waitGetS(ss);
+			if(ss!=null){
+				ss.close();
+			}
+			for(Node nn :MainServer.NodeList){
+				if(nn.getIp().equals(ss.getInetAddress())&& nn.getPort()==ss.getPort()){
+					nn.downLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
 				}
-				outS(f,ss);
-				waitGetS(ss);
-				if(s!=null){
-					s.close();
-				}
-				for(Node nn :MainServer.NodeList){
-					if(nn.getIp().equals(ss.getInetAddress())&& nn.getPort()==ss.getPort()){
-						nn.downLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
-					}
-				}
-				String basicIP = MainServer.prop.getProperty(fileName+"basicIP");
-				port = Integer.parseInt(MainServer.prop.getProperty(fileName+"basicPort"));
-				try{
+			}
+			String basicIP = MainServer.prop.getProperty(fileName+"basicIP");
+			port = Integer.parseInt(MainServer.prop.getProperty(fileName+"basicPort"));
+			try{
 				Socket sss = new Socket(basicIP,port);
 				outS("second",sss);
 				waitGetS(sss);
 				outS("delete",sss);
 				waitGetS(sss);
-				String ff = fileName;
+				String ff = uuid+nowName;
 				if(MainServer.prop.getProperty(fileName).equals(fileName)){
-					ff = MainServer.prop.getProperty(fileName+"oldName");
+					ff = MainServer.prop.getProperty(uuid+"oldName");
 				}
 				outS(ff,sss);
 				waitGetS(sss);
-				if(s!=null){
-					s.close();
+				if(sss!=null){
+					sss.close();
 				}
 				for(Node nn :MainServer.NodeList){
 					if(nn.getIp().equals(sss.getInetAddress())&& nn.getPort()==sss.getPort()){
@@ -364,7 +371,7 @@ public class ClientServer extends Thread{
 						s.close();
 					}
 				}
-			
+			out("get");
 		}
 		else{
 			out("false");
