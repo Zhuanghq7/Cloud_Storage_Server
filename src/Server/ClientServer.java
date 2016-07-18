@@ -327,7 +327,7 @@ public class ClientServer extends Thread{
 				ss.close();
 			}
 			for(Node nn :MainServer.NodeList){
-				if(nn.getIp().equals(ss.getInetAddress())&& nn.getPort()==ss.getPort()){
+				if(nn.getIp().equals(ss.getInetAddress().toString().substring(1))&& nn.getPort()==ss.getPort()){
 					nn.downLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
 				}
 			}
@@ -341,7 +341,7 @@ public class ClientServer extends Thread{
 				waitGetS(sss);
 				String ff = uuid+nowName;
 				if(MainServer.prop.getProperty(fileName).equals(fileName)){
-					ff = MainServer.prop.getProperty(uuid+"oldName");
+					ff = uuid+MainServer.prop.getProperty(uuid+"oldName");
 				}
 				outS(ff,sss);
 				waitGetS(sss);
@@ -349,7 +349,7 @@ public class ClientServer extends Thread{
 					sss.close();
 				}
 				for(Node nn :MainServer.NodeList){
-					if(nn.getIp().equals(sss.getInetAddress())&& nn.getPort()==sss.getPort()){
+					if(nn.getIp().equals(sss.getInetAddress().toString().substring(1))&& nn.getPort()==sss.getPort()){
 						nn.downLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
 					}
 				}
