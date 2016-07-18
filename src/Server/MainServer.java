@@ -28,7 +28,8 @@ public class MainServer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
+	}//存储prop到本地文件
+	
 	public static void main(String[] args){
 		try {
 			MainServer MS = new MainServer();
@@ -42,12 +43,14 @@ public class MainServer {
 			leftStorage = 0;
 			fileNumber = Integer.parseInt(prop.getProperty("fileNumber"));
 			NodeNumber = Integer.parseInt(prop.getProperty("NodeNumber"));
+			//读取prop信息并初始化
+			
 			MS.initNode(prop);
 			System.out.println("初始化成功");
 			ServerSocket ss = new ServerSocket(1234);
 			while(true){
 				Socket s = ss.accept();
-				new ClientServer(s).start();
+				new ClientServer(s).start();//新线程
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -59,18 +62,18 @@ public class MainServer {
 			e.printStackTrace();
 		}
 	}
-	public void initNode(Properties prop){
+	public void initNode(Properties prop){//通过配置文件初始化服务器
 		for(int i = 0 ;i< NodeNumber ;i++){
 			String ip = prop.getProperty("Node_"+(i+1));
 			int port = Integer.parseInt(prop.getProperty("Node_"+(i+1)+"_port"));
 			Node temp  = new Node(ip,port);
 			if(temp.isSuccess()){
-				NodeList.add(temp);
+				NodeList.add(temp);//如果节点存在，且初始化成功，则添加到列表中
 			}
 		}
-		updateStorage();
+		updateStorage();//更新本地容量
 	}
-	public static void updateStorage(){
+	public static void updateStorage(){//更新本地最大存储容量跟剩余容量
 		for(Node n:NodeList){
 			maxStorage+=n.getMaxStorage();
 			leftStorage+=n.getLeftStorage();
@@ -81,7 +84,7 @@ public class MainServer {
 	}
 	public static Socket[] getNodes() {
 		if(NodeList.size()<=1){
-			return null;
+			return null;//是否有两个节点
 		}
 		else{
 			Node main = null;
@@ -91,19 +94,19 @@ public class MainServer {
 						main = n;
 					}
 					else if(main.getLeftStorage()<=n.getLeftStorage()){
-						main = n;
+						main = n;//找个最大的
 					}
 				}
 			}
 			Node basic = null;
 			for(Node n:NodeList){
 				if(!n.isFull()){
-					if(n!=main){
+					if(n!=main){//basic！=main
 						if(basic == null){
 							basic = n;
 						}
 						else if(basic.getLeftStorage()<=n.getLeftStorage()){
-							basic = n;
+							basic = n;//找个最大的
 						}
 					}
 				}
@@ -114,8 +117,8 @@ public class MainServer {
 					Socket Main = new Socket(main.getIp(),main.getPort());
 					result[0] = Main;
 				} catch (Exception e) {
-					NodeList.remove(main);
-					return getNodes();
+					NodeList.remove(main);//如果无法连接上，说明节点在初次连接之后已经GG，直接从服务器节点中删除
+					return getNodes();//重新寻找
 				}	
 				try{
 					Socket Basic = new Socket(basic.getIp(),basic.getPort());
@@ -130,8 +133,8 @@ public class MainServer {
 							e1.printStackTrace();
 						}
 					}
-					NodeList.remove(basic);
-					return getNodes();
+					NodeList.remove(basic);//如果无法连接上，说明节点在初次连接之后已经GG，直接从服务器节点中删除
+					return getNodes();//重新寻找
 				}
 			}
 			

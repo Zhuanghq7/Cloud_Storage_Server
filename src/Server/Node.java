@@ -71,7 +71,7 @@ public class Node {
 		try {
 			this.ip = ip;
 			this.port = port;
-			s = new Socket(ip,port);
+			s = new Socket(ip,port);//第一次连接检点，传输初始化信息
 			isConnect = true;
 			out("first");
 			name = in();

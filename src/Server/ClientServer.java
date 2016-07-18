@@ -63,6 +63,7 @@ public class ClientServer extends Thread{
 			return true;
 		return false;
 	}
+	//以上6条跟node一毛一样
 	private void upload() throws UnsupportedEncodingException, IOException{
 		out("get");
 		String fileName = in();
@@ -71,7 +72,9 @@ public class ClientServer extends Thread{
 		out("get");
 		DataInputStream dis = new DataInputStream(s.getInputStream());
 		long flength = dis.readLong();
+		//文件长度
 		Socket[] Nodes = MainServer.getNodes();
+		//从服务器所有节点中，选择剩余容量最大的两个节点。
 		if(flength<=MainServer.leftStorage){
 			Socket main = Nodes[0];
 			Socket basic = Nodes[1];
@@ -80,9 +83,9 @@ public class ClientServer extends Thread{
 			outS("up",basic);
 			waitGetS(basic);
 			DataOutputStream dosB = new DataOutputStream(basic.getOutputStream());
-			dosB.writeLong(flength);
+			dosB.writeLong(flength);//首先连接备份节点，备份节点能存下主节点一定能存下
 			dosB.flush();
-			if(waitGetS(basic)){
+			if(waitGetS(basic)){//如果备份节点放的下，即可开始传输
 				outS("second",main);
 				waitGetS(main);
 				outS("up",main);
@@ -90,11 +93,14 @@ public class ClientServer extends Thread{
 				DataOutputStream dosA = new DataOutputStream(main.getOutputStream());
 				dosA.writeLong(flength);
 				dosA.flush();
+				
+				//传输名字
 				waitGetS(main);
 				outS(newFile,main);
 				waitGetS(main);
 				outS(newFile,basic);
 				waitGetS(basic);
+				
 				out("get");//向客户端确认可以存储 
 				byte[] inputByte = new byte[1024];     
 				System.out.println("开始上传文件："+fileName);  
@@ -130,8 +136,8 @@ public class ClientServer extends Thread{
 				MainServer.prop.setProperty(uuid+"size", ""+flength);
 				MainServer.prop.setProperty("fileNumber", ""+(Integer.parseInt(MainServer.prop.getProperty("fileNumber"))+1));
 				MainServer.updateStorage();
-				MainServer.saveProperties();
-				out(uuid);
+				MainServer.saveProperties();//存储信息
+				out(uuid);//返回uuid
 				waitGet();
 				if(main!=null){
 					main.close();
@@ -139,11 +145,11 @@ public class ClientServer extends Thread{
 				if(basic!=null){
 					basic.close();
 				}
-			}else{
+			}else{//如果，备份服务器都放不下
 				out("false");
 			}
 		}
-		else{
+		else{//如果整个文件系统都放不下
 			out("false");
 		}
 	}
@@ -152,27 +158,28 @@ public class ClientServer extends Thread{
 		String uuid = in();
 		String nowName = null;
 		String fileName;
-		if((fileName = MainServer.prop.getProperty(uuid)) !=null){
-			if(fileName.equals(uuid)){
+		if((fileName = MainServer.prop.getProperty(uuid)) !=null){//判断有没有这个文件
+			if(fileName.equals(uuid)){//判断是否改了名
 				fileName = MainServer.prop.getProperty(uuid+"oldName");
 				nowName = MainServer.prop.getProperty(uuid+"nowName");
 			}
 			String MainIP = MainServer.prop.getProperty(uuid+"mainIP");
 			int port = Integer.parseInt(MainServer.prop.getProperty(uuid+"mainPort"));
+			//从本地文件中搜索
 			try {
 				Socket sB = new Socket(MainIP,port);
 				outS("second",sB);
 				waitGetS(sB);
 				outS("down",sB);
 				waitGetS(sB);
-				outS(uuid+fileName,sB);
+				outS(uuid+fileName,sB);//向节点要文件
 				if(waitGetS(sB)){//找到了该文件
 					out("get");
 					outS("get",sB);
-					DataInputStream dis = new DataInputStream(sB.getInputStream());
-					long flength = dis.readLong();
-					DataOutputStream dos = new DataOutputStream(s.getOutputStream());
-					dos.writeLong(flength);
+					DataInputStream dis = new DataInputStream(sB.getInputStream());//从节点拿
+					long flength = dis.readLong();//从节点那知道文件大小
+					DataOutputStream dos = new DataOutputStream(s.getOutputStream());//向客户端去
+					dos.writeLong(flength);//告诉客户端
 					dos.flush();
 					waitGet();//*********
 					if(nowName!=null){
@@ -183,7 +190,7 @@ public class ClientServer extends Thread{
 					}
 					waitGet();
 					outS("get",sB);
-
+					//开始传输
 					byte[] inputByte = new byte[1024];     
 					System.out.println("开始下载文件："+fileName);  
 					double sumL = 0;
@@ -203,9 +210,12 @@ public class ClientServer extends Thread{
 						if(sB!=null){
 							sB.close();
 						}
+						if(s!=null){
+							s.close();
+						}
 					}
 				}
-				else{
+				else{//没有这个文件GGGGG
 					out("false");
 				}
 			} catch (Exception e) {
@@ -270,7 +280,7 @@ public class ClientServer extends Thread{
 			}
 			
 			
-		}
+		}//如果没有文件直接返回false；
 		else{
 			out("false");
 		}
@@ -278,22 +288,22 @@ public class ClientServer extends Thread{
 	
 	public void rename() throws UnsupportedEncodingException, IOException{
 		out("get");
-		String fileName = in();
+		String fileName = in();//这个fileName是UUID我懒得改名了
 		String oldName = null;
 		if((oldName = MainServer.prop.getProperty(fileName))!=null){
-			MainServer.prop.setProperty(fileName, fileName);
+			MainServer.prop.setProperty(fileName, fileName);//先把UUID 文件名 键值对改为 UUID UUID
 			if(!oldName.equals(fileName)){
-				MainServer.prop.setProperty(fileName+"oldName",oldName);
+				MainServer.prop.setProperty(fileName+"oldName",oldName);//如果是第一次改名
 			}
 			out("get");
 			String nowName = in();
-			MainServer.prop.setProperty(fileName+"nowName", nowName);
-			MainServer.saveProperties();
+			MainServer.prop.setProperty(fileName+"nowName", nowName);//设置新名字
+			MainServer.saveProperties();//存储新名字
 			out("get");
 			if(s!=null){
 				s.close();
 			}
-		}else{
+		}else{//文件不存在不能改名
 			out("false");
 		}
 	}
@@ -309,10 +319,10 @@ public class ClientServer extends Thread{
 			if(nowName.equals(uuid)){
 				nowName = MainServer.prop.getProperty(uuid+"nowName");
 				oldName = MainServer.prop.getProperty(uuid+"oldName");
-			}
+			}//是否改名
 			String mainIP = MainServer.prop.getProperty(uuid+"mainIP");
 			int port = Integer.parseInt(MainServer.prop.getProperty(uuid+"mainPort"));
-			Socket ss = new Socket(mainIP,port);
+			Socket ss = new Socket(mainIP,port);//得到主节点
 			outS("second",ss);
 			waitGetS(ss);
 			outS("delete",ss);
@@ -326,12 +336,14 @@ public class ClientServer extends Thread{
 			if(ss!=null){
 				ss.close();
 			}
+			//主节点结束
 			for(Node nn :MainServer.NodeList){
 				if(nn.getIp().equals(ss.getInetAddress().toString().substring(1))&& nn.getPort()==ss.getPort()){
-					nn.downLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
+					nn.upLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
 				}
 			}
-			String basicIP = MainServer.prop.getProperty(fileName+"basicIP");
+			//更新一下节点的容量
+			String basicIP = MainServer.prop.getProperty(fileName+"basicIP");//得到备份节点
 			port = Integer.parseInt(MainServer.prop.getProperty(fileName+"basicPort"));
 			try{
 				Socket sss = new Socket(basicIP,port);
@@ -350,11 +362,12 @@ public class ClientServer extends Thread{
 				}
 				for(Node nn :MainServer.NodeList){
 					if(nn.getIp().equals(sss.getInetAddress().toString().substring(1))&& nn.getPort()==sss.getPort()){
-						nn.downLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
+						nn.upLeftStorage(Long.parseLong(MainServer.prop.getProperty(uuid+"size")));
 					}
 				}
+				//更新容量信息
 				MainServer.updateStorage();
-				if(MainServer.prop.getProperty(uuid).equals(uuid)){
+				if(MainServer.prop.getProperty(uuid).equals(uuid)){//删除所有配置文件
 					MainServer.prop.remove(uuid+"nowName");
 					MainServer.prop.remove(uuid+"oldName");
 				}
@@ -365,7 +378,7 @@ public class ClientServer extends Thread{
 					MainServer.prop.remove(uuid+"mainPort");
 					MainServer.prop.remove(uuid+"basicPort");
 					MainServer.prop.remove(uuid+"size");
-					MainServer.saveProperties();
+					MainServer.saveProperties();//更新到本地
 				}catch(Exception ee){
 					if(s!=null){
 						s.close();
