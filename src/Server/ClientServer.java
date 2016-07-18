@@ -160,6 +160,7 @@ public class ClientServer extends Thread{
 						basic.close();
 						System.out.println("关闭baisc");
 					}
+					s.close();
 					System.out.println("上传失败");
 				}
 			}else{//如果，备份服务器都放不下
