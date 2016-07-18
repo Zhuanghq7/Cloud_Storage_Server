@@ -68,6 +68,7 @@ public class ClientServer extends Thread{
 		String fileName = in();
 		String uuid = UUID.randomUUID().toString();
 		String newFile = uuid+fileName;
+		out("get");
 		DataInputStream dis = new DataInputStream(s.getInputStream());
 		long flength = dis.readLong();
 		Socket[] Nodes = MainServer.getNodes();
@@ -108,11 +109,11 @@ public class ClientServer extends Thread{
 					System.out.println("已传输："+sumL/(flength/100)+"%");
 					if(sumL>=flength){
 						//System.out.println("1");
+						waitGetS(main);
+						waitGetS(basic);
 						break;
 					}  
 				}  
-				out(uuid);
-				waitGet();
 				for(Node nn :MainServer.NodeList){
 					if(nn.getIp().equals(main.getInetAddress())&& nn.getPort()==main.getPort()){
 						nn.downLeftStorage(flength);
@@ -122,13 +123,16 @@ public class ClientServer extends Thread{
 					}
 				}
 				MainServer.prop.setProperty(uuid, fileName);
-				MainServer.prop.setProperty(uuid+"mainIP",main.getInetAddress().toString());
+				MainServer.prop.setProperty(uuid+"mainIP",main.getInetAddress().toString().substring(1));
 				MainServer.prop.setProperty(uuid+"mainPort",""+main.getPort());
-				MainServer.prop.setProperty(uuid+"basicIP",basic.getInetAddress().toString());
+				MainServer.prop.setProperty(uuid+"basicIP",basic.getInetAddress().toString().substring(1));
 				MainServer.prop.setProperty(uuid+"basicPort",""+basic.getPort());
 				MainServer.prop.setProperty(uuid+"size", ""+flength);
+				MainServer.prop.setProperty("fileNumber", ""+Integer.parseInt(MainServer.prop.getProperty("fileNumber"))+1);
 				MainServer.updateStorage();
 				MainServer.saveProperties();
+				out(uuid);
+				waitGet();
 				if(main!=null){
 					main.close();
 				}
@@ -147,8 +151,8 @@ public class ClientServer extends Thread{
 		out("get");
 		String uuid = in();
 		String nowName = null;
-		if(MainServer.prop.contains(uuid)){
-			String fileName = MainServer.prop.getProperty(uuid);
+		String fileName;
+		if((fileName = MainServer.prop.getProperty(uuid)) !=null){
 			if(fileName == uuid){
 				fileName = MainServer.prop.getProperty(uuid+"oldName");
 				nowName = MainServer.prop.getProperty(uuid+"nowName");
@@ -162,14 +166,15 @@ public class ClientServer extends Thread{
 				outS("down",sB);
 				waitGetS(sB);
 				outS(uuid+fileName,sB);
-				if(waitGetS(sB)){
+				if(waitGetS(sB)){//找到了该文件
 					out("get");
+					outS("get",sB);
 					DataInputStream dis = new DataInputStream(sB.getInputStream());
 					long flength = dis.readLong();
 					DataOutputStream dos = new DataOutputStream(s.getOutputStream());
 					dos.writeLong(flength);
 					dos.flush();
-					waitGet();
+					waitGet();//*********
 					if(nowName!=null){
 						out(nowName);
 					}
@@ -177,8 +182,8 @@ public class ClientServer extends Thread{
 						out(fileName);
 					}
 					waitGet();
-					
-					
+					outS("get",sB);
+
 					byte[] inputByte = new byte[1024];     
 					System.out.println("开始下载文件："+fileName);  
 					double sumL = 0;
@@ -219,12 +224,18 @@ public class ClientServer extends Thread{
 						DataInputStream dis = new DataInputStream(sB.getInputStream());
 						long flength = dis.readLong();
 						DataOutputStream dos = new DataOutputStream(s.getOutputStream());
+						outS("get",sB);
 						dos.writeLong(flength);
 						dos.flush();
 						waitGet();
-						out(fileName);
+						if(nowName!=null){
+							out(nowName);
+						}
+						else{
+							out(fileName);
+						}
 						waitGet();
-						
+						outS("get",sB);
 						
 						byte[] inputByte = new byte[1024];     
 						System.out.println("开始下载文件："+fileName);  

@@ -15,7 +15,7 @@ public class MainServer {
 	public static long leftStorage = 0;
 	public static int fileNumber = 0;
 	public static int NodeNumber = 0;
-	public static Vector<Node> NodeList;
+	public static Vector<Node> NodeList = new Vector<Node>();
 	public static Properties prop;
 	
 	public static void saveProperties(){
@@ -36,8 +36,10 @@ public class MainServer {
 			FileInputStream fis;
 			fis = new FileInputStream("Server.properties");
 			prop.load(fis);//将属性文件流装载到Properties对象中    
-			maxStorage = Long.parseLong(prop.getProperty("maxStorage"));
-			leftStorage = Long.parseLong(prop.getProperty("leftStorage"));
+			//maxStorage = Long.parseLong(prop.getProperty("maxStorage"));
+			//leftStorage = Long.parseLong(prop.getProperty("leftStorage"));
+			maxStorage = 0;
+			leftStorage = 0;
 			fileNumber = Integer.parseInt(prop.getProperty("fileNumber"));
 			NodeNumber = Integer.parseInt(prop.getProperty("NodeNumber"));
 			MS.initNode(prop);

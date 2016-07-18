@@ -81,7 +81,7 @@ public class Node {
 			out("get");
 			leftStorage = dis.readLong();
 			out("get");
-			if(leftStorage >= maxStorage){
+			if(leftStorage <=0){
 				full = true;
 			}
 			if(s!=null){
