@@ -249,6 +249,7 @@ public class ClientServer extends Thread{
 					outS(uuid+fileName,sB);
 					if(waitGetS(sB)){
 						out("get");
+						outS("get",sB);
 						DataInputStream dis = new DataInputStream(sB.getInputStream());
 						long flength = dis.readLong();
 						DataOutputStream dos = new DataOutputStream(s.getOutputStream());
